@@ -1,0 +1,4 @@
+dabut
+=====
+
+JavaScript minimum utility
