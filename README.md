@@ -1,7 +1,5 @@
 # dabut
 
-=====
-
 よく使う最小限の機能だけのutilityです。
 
 ## dabut.initialize(initializer);
