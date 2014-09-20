@@ -17,7 +17,8 @@
 	var _done = false;
 	
 	/**
-	 * 
+	 * API.
+	 * @fn: Function : called at onDOMContentLoaded
 	 **/
 	var initialize = function(fn){
 		if( _done ){
@@ -29,7 +30,7 @@
 	};
 	
 	/**
-	 * 
+	 * onload event handler
 	 **/
 	var loaded = function(e){
 		if( root.removeEventListener ){
@@ -52,7 +53,11 @@
 	};
 	
 	/**
-	 *
+	 * Alias of querySelector().
+	 * returns DOM Element.
+	 * 
+	 * @selector: String : CSS selector
+	 * @context: Element : parent node to search query
 	 **/
 	var el = function(selector, context){
 		context = context || document;
@@ -60,36 +65,51 @@
 	};
 	
 	/**
-	 *
+	 * Alias of querySelectorAll().
+	 * returns DOM NodeList.
+	 * 
+	 * @selector: String : CSS selector
+	 * @context: Element : parent node to search query
 	 **/
 	var els = function(selector, context){
 		context = context || document;
 		return context.querySelectorAll(selector);
 	};
-	
 	/**
+	 * Array.prototype.forEach() or Array.prototype.map(), etc.
+	 * Also more 3 arguments can be passed to the callback.
+	 * each(items, callback [, arg1, arg2 ...])
+	 * returns list of object from callback.
 	 * 
+	 * @items: Array or Object : 
+	 * @callback: Function : 
 	 **/
 	var each = function(items, callback){
-		var i, p;
+		var i;
+		var result = [], retVal;
 		var args = [null, 0, items].concat(Array.prototype.slice.call(arguments, 2));
 		if( items.length !== undefined ){
 			for( i = 0; i < items.length; i++ ){
 				args[0] = items[i];
 				args[1] = i;
-				callback.apply(items[i], args);
+				retVal = callback.apply(items[i], args);
+				if( retVal !== false && retVal !== null && retVal !== undefined ){
+					result.push(retVal);
+				}
 			}
 		}else{
-			i = 0;
-			for( p in items ){
-				if( items.hasOwnProperties(p) ){
-					args[0] = items[p];
+			for( i in items ){
+				if( items.hasOwnProperties(i) ){
+					args[0] = items[i];
 					args[1] = i;
-					callback.apply(items[p], args);
-					i++;
+					retVal = callback.apply(items[i], args);
+					if( retVal !== false && retVal !== null && retVal !== undefined ){
+						result.push(retVal);
+					}
 				}
 			}
 		}
+		return result;
 	};
 	
 	
@@ -155,3 +175,5 @@
 	dabut.each = each;
 	
 })(this);
+
+
