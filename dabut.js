@@ -1,5 +1,5 @@
 /****
- * dabut.js 0.1.0
+ * dabut.js 0.1.1
  * 
  * Javascript minimum utility.
  * 
@@ -88,24 +88,26 @@
 		var i;
 		var result = [], retVal;
 		var args = [null, 0, items].concat(Array.prototype.slice.call(arguments, 2));
+		
+		var fn = function(item, i){
+			args[0] = item;
+			args[1] = i;
+			retVal = callback.apply(item, args);
+			if( retVal === true ){
+				result.push(item);
+			}else if( retVal !== false && retVal !== undefined ){
+				result.push(retVal);
+			}
+		};
+		
 		if( items.length !== undefined ){
 			for( i = 0; i < items.length; i++ ){
-				args[0] = items[i];
-				args[1] = i;
-				retVal = callback.apply(items[i], args);
-				if( retVal !== false && retVal !== null && retVal !== undefined ){
-					result.push(retVal);
-				}
+				fn(items[i], i);
 			}
 		}else{
 			for( i in items ){
 				if( items.hasOwnProperties(i) ){
-					args[0] = items[i];
-					args[1] = i;
-					retVal = callback.apply(items[i], args);
-					if( retVal !== false && retVal !== null && retVal !== undefined ){
-						result.push(retVal);
-					}
+					fn(items[i], i);
 				}
 			}
 		}

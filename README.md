@@ -14,7 +14,7 @@ documentおよびwindowのloadイベント専用のため、imageやiframeなど
 
 - selector: String : CSSセレクタ
 - context: Element : 基準となるElement
-
+===
 - returns: Element
 
 querySelector()のラッパーです。
@@ -24,7 +24,7 @@ contextを省略すると、documentが使われます。
 
 - selector: String : CSSセレクタ
 - context: Element : 基準となるElement
-
+===
 - returns: NodeList
 
 querySelectorAll()のラッパーです。
@@ -32,7 +32,18 @@ contextを省略すると、documentが使われます。
 
 ## dabut.each(items, callback [, args ...]);
 
+- items: Any : 配列、プレーンオブジェクト
+- callback: Function : 要素に対して呼び出されるコールバック関数
+- args: Any : コールバック関数の第4引数以降で渡される値
+===
+- returns: Array
+
 配列またはプレーンオブジェクトのそれぞれの要素に対して、callback関数を実行します。
+
+each()はfilter()やgrep()などと同じような機能を提供します。
+callback関数からの戻り値がtrueの場合は第一引数を、それ以外は戻り値を配列にした物が、each()の戻り値となります。
+callback関数の戻り値がfalse、undefinedのいずれかの場合には、each()の戻り値には含まれません。
+
 
 ### callback(item, index, array [, args ...]);
 
