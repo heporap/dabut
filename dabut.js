@@ -1,5 +1,5 @@
 /****
- * dabut.js 0.1.1
+ * dabut.js 0.1.2
  * 
  * Javascript minimum utility.
  * 
@@ -11,7 +11,7 @@
  * 
  * http://github.com/heporap/dabut
 ****/
-(function(root){
+(function(root, undefined){
 	"use strict";
 	var _initialize = [];
 	var _done = false;
@@ -49,6 +49,10 @@
 		});
 		
 		_initialize.length = 0;
+		
+		// start tick tick
+		requestAnimationFrame(ticker);
+		
 		loaded = null;
 	};
 	
@@ -77,22 +81,42 @@
 	};
 	/**
 	 * Array.prototype.forEach() or Array.prototype.map(), etc.
+	 * The 3rd argument will be the this-Object in each callbacks.
 	 * Also more 3 arguments can be passed to the callback.
-	 * each(items, callback [, arg1, arg2 ...])
-	 * returns list of object from callback.
+	 *
+	 * If the items is an array of functions, callback-argument would be ignored and the each functions would be calld like callback.
 	 * 
+	 * @usage
+	 * each(items, callback [, arg1, arg2 ...])
+	 * 
+	 * @returns
+	 * list of object from callback.
+	 *
 	 * @items: Array or Object : 
 	 * @callback: Function : 
+	 * 
+	 * callback function
+	 * function( item, index, array[, argument ...] )
+	 * @item: Any : item of items
+	 * @index: Number : index of items
+	 * @array: Array or Object : items
+	 * @this object: Object: the 3rd argument of each()
+	 * more than 3 arguments: more than 3 arguments of each()
 	 **/
-	var each = function(items, callback){
+	var each = function(items, callback, context){
 		var i;
 		var result = [], retVal;
 		var args = [null, 0, items].concat(Array.prototype.slice.call(arguments, 2));
 		
 		var fn = function(item, i){
-			args[0] = item;
 			args[1] = i;
-			retVal = callback.apply(item, args);
+			if( typeof item === 'function' ){
+				args[0] = ( context.length !== undefined )? context[i]: context;
+				retVal = item.apply(args[0], args);
+			}else{
+				args[0] = item;
+				retVal = callback.apply(context, args);
+			}
 			if( retVal === true ){
 				result.push(item);
 			}else if( retVal !== false && retVal !== undefined ){
@@ -114,6 +138,115 @@
 		return result;
 	};
 	
+	// http://davidwalsh.name/vendor-prefix
+	var venderPrefix = (function () {
+		var styles = window.getComputedStyle(document.documentElement, ''),
+			pre = (Array.prototype.slice
+				.call(styles)
+				.join('')
+				.match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
+			)[1],
+			dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
+		return {
+			dom: dom,
+			lowercase: pre,
+			css: '-' + pre + '-',
+			js: pre[0].toUpperCase() + pre.substr(1)
+		};
+	})();
+	
+	var getComputedStyle = function(element, prop){
+		if( window.getComputedStyle ){
+			return window.getComputedStyle(element, '')[prop];
+		}else{
+			return element.currentStyle[prop] ? element.currentStyle[prop] : null;
+		}
+	};
+	
+	var position = function(element){
+		var metrics = element.getBoundingClientRect();
+		var documentElement = document.documentElement;
+		var math = Math;
+		return {
+			left: math.round(metrics.left + window.scrollX || ((document.body.scrollLeft || documentElement.scrollLeft) - documentElement.clientLeft)),
+			top: math.round(metrics.top + window.scrollY || ((document.body.scrollTop || documentElement.scrollTop) - documentElement.clientLeft)),
+			width: math.round(metrics.width),
+			height: math.round(metrics.height)
+		};
+	};
+	
+	var style = function(element, prop, value){
+		var vprop;
+		var re = /(\-([a-z]))/g;
+		
+		if( prop === 'float' ){
+			prop = (venderPrefix==='-ms-')? 'styleFloat': 'cssFloat';
+		}
+		
+		if( re.test(prop) ){
+			prop = prop.replace(re, function(){
+				return arguments[2].toUpperCase();
+			});
+			vprop = (venderPrefix+prop).replace(re, function(){
+				return arguments[2].toUpperCase();
+			});
+		}
+		
+		if( value !== undefined ){
+			element.style.prop = element.style[vprop] = value;
+			
+		}else{
+			return getComputedStyle(element, prop) || getComputedStyle(element, vprop);
+			
+		}
+	};
+	
+	/**
+	 * requestAnimationFrame
+	 *
+	 * @usage
+	 * ticker.append(fn, context);
+	 * 
+	 * @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
+	 * @context: Any : thisObject in fn
+	 * 
+	 * @usage
+	 * ticker.remove(fn);
+	 * 
+	 * @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
+	 **/
+	var now = Date.now? Date.now: function(){ return +(new Date()); };
+	var requestAnimationFrame = root.requestAnimationFrame || root.mozRequestAnimationFrame || root.webkitRequestAnimationFrame || root.msRequestAnimationFrame || (function(){var startTime = now(); return function(callback){var f=function(){callback.call(context, now() - startTime);}; setTimeout(f, 1000/60); }; }());
+	
+	var ticker = function(timestamp){
+		var self=ticker,i;
+		for( i = 0; i < self.callbacks.length; i++ ){
+			self.callbacks[i].call(self.contexts[i], timestamp);
+		}
+		requestAnimationFrame(ticker);
+	};
+	ticker.callbacks = [];
+	ticker.contexts = [];
+	ticker.append = function(fn, context){
+		this.callbacks.push( fn );
+		this.contexts.push( context||null );
+		return this.callbacks.length;
+	};
+	ticker.remove = function(fn){
+		if( typeof fn === 'number' ){
+			this.callbacks.splice(fn, 1);
+			this.contexts.splice(fn, 1);
+		}else if( typeof fn === 'function' ){
+			for(var i = 0; i < this.callbacks.length; i++ ){
+				if( this.callbacks[i] === fn ){
+					this.callbacks.splice(i, 1);
+					this.contexts.splice(i, 1);
+					break;
+				}
+			}
+		}
+		return this;
+	};
 	
 	/**
 	 * set handler on onload event
@@ -144,7 +277,7 @@
 	var dab = root.dab || {};
 	root.dab = dab;
 	dab.klass = dab.klass || {};
-	dab.klass.dabut = 'initialize el els each';
+	dab.klass.dabut = 'initialize el els each ticker position style';
 	
 	if( !dab.exports ){
 		dab.exports = function(args){
@@ -169,13 +302,25 @@
 	}
 	
 	var dabut = {};
-	root.dabut = dabut;
-	
 	dabut.initialize = initialize;
 	dabut.el = el;
 	dabut.els = els;
 	dabut.each = each;
+	dabut.ticker = ticker;
+	dabut.position = position;
+	dabut.style = style;
+	
+	if(typeof define === 'function' && define.amd ){
+		if( root.document ){
+			loaded();
+		}
+		define('dabut', function(){ return dabut; });
+		
+	}else{
+		root.dabut = dabut;
+		
+	}
+	return dabut;
 	
 })(this);
-
 
