@@ -84,8 +84,6 @@
 	 * The 3rd argument will be the this-Object in each callbacks.
 	 * Also more 3 arguments can be passed to the callback.
 	 *
-	 * If the items is an array of functions, callback-argument would be ignored and the each functions would be calld like callback.
-	 * 
 	 * @usage
 	 * each(items, callback [, arg1, arg2 ...])
 	 * 
@@ -93,6 +91,14 @@
 	 * list of object from callback.
 	 *
 	 * @items: Array or Object : 
+	 * @callback: Function : 
+	 * 
+	 * @usage
+	 * each(callbacks, null [, arg1, arg2 ...])
+	 * 
+	 * @returns
+	 * list of object from callback.
+	 *
 	 * @callback: Function : 
 	 * 
 	 * callback function
@@ -163,7 +169,29 @@
 		}
 	};
 	
+	/**
+	 * position
+	 *
+	 * @usage
+	 * position(element);
+	 * 
+	 * @returns
+	 * {
+	 *   left: Number,
+	 *   top: Number,
+	 *   width: Number,
+	 *   height: Number
+	 * }
+	 * 
+	 * @element: HTML-Element or String : 
+	 * 
+	 * This method uses Element.getBoundingClientRect(), 
+	 * compatible width jQuery.position(), jQuery.width(), jQuery.height()
+	 **/
 	var position = function(element){
+		if( typeof element === 'string' ){
+			element = el(element);
+		}
 		var metrics = element.getBoundingClientRect();
 		var documentElement = document.documentElement;
 		var math = Math;
@@ -175,6 +203,20 @@
 		};
 	};
 	
+	/**
+	 * style
+	 *
+	 * @usage
+	 * style(element, prop [, value]);
+	 * 
+	 * @returns
+	 * element's style value
+	 * 
+	 * @element: HTML-Element : 
+	 * @prop: String : style property
+	 * @value: String : style value
+	 * 
+	 **/
 	var style = function(element, prop, value){
 		var vprop;
 		var re = /(\-([a-z]))/g;
@@ -194,7 +236,7 @@
 		
 		if( value !== undefined ){
 			element.style.prop = element.style[vprop] = value;
-			
+			return value;
 		}else{
 			return getComputedStyle(element, prop) || getComputedStyle(element, vprop);
 			
