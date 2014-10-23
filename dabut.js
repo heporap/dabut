@@ -1,26 +1,27 @@
 /****
- * dabut.js 0.1.2
- * 
+ * dabut.js 0.1.3
+ *
  * Javascript minimum utility.
- * 
+ *
  * License: The MIT License.
  * http://opensource.org/licenses/MIT
- * 
+ *
  * (c) 2014 Wicker Wings
  * http://www.wi-wi.jp/
- * 
+ *
  * http://github.com/heporap/dabut
 ****/
 (function(root, undefined){
 	"use strict";
 	var _initialize = [];
 	var _done = false;
+	var dabut = {};
 	
 	/**
-	 * API.
-	 * @fn: Function : called at onDOMContentLoaded
-	 **/
-	var initialize = function(fn){
+	* API.
+	* @fn: Function : called at onDOMContentLoaded
+	**/
+	var initialize = dabut.initialize = function(fn){
 		if( _done ){
 			fn();
 		}else{
@@ -30,18 +31,12 @@
 	};
 	
 	/**
-	 * onload event handler
-	 **/
+	* onload event handler
+	**/
 	var loaded = function(e){
-		if( root.removeEventListener ){
-			root.document.removeEventListener('DOMContentLoaded', loaded, false);
-			root.removeEventListener('load', loaded, false);
-			
-		}else if( root.detachEvent ){
-			root.document.detachEvent('onDOMContentLoaded', loaded);
-			root.detachEvent('onload', loaded);
-			
-		}
+		off(root, 'load', loaded);
+		off(root, 'DOMContentLoaded', loaded);
+		
 		_done = true;
 		
 		each(_initialize, function(f){
@@ -56,89 +51,118 @@
 		loaded = null;
 	};
 	
-	/**
-	 * Alias of querySelector().
-	 * returns DOM Element.
-	 * 
-	 * @selector: String : CSS selector
-	 * @context: Element : parent node to search query
-	 **/
-	var el = function(selector, context){
-		context = context || document;
-		return context.querySelector(selector);
+	/****
+	* Object type check.
+	****/
+	var isFunction = dabut.isFunction = function(o){
+		return Object.prototype.toString.call(o) === '[object Function]';
+	};
+	var isArray = dabut.isArray = function(o){
+		return Object.prototype.toString.call(o) === '[object Array]';
+	};
+	/*! jshint errors because isObject is not used */
+	/*var isObject = */dabut.isObject = function(o){
+		return Object.prototype.toString.call(o) === '[object Object]';
+	};
+	var isString = dabut.isString = function(o){
+		return Object.prototype.toString.call(o) === '[object String]';
+	};
+	var isNumber = dabut.isNumber = function(o){
+		return Object.prototype.toString.call(o) === '[object Number]';
+	};
+	
+	var filterElement = function(elements){
+		var result = [], i;
+		for( i = 0; i < elements.length; i++ ){
+			if( elements[i] !== null ){
+				result.push(elements[i]);
+			}
+		}
+		return result;
 	};
 	
 	/**
-	 * Alias of querySelectorAll().
-	 * returns DOM NodeList.
-	 * 
-	 * @selector: String : CSS selector
-	 * @context: Element : parent node to search query
-	 **/
-	var els = function(selector, context){
+	* Alias of querySelector().
+	* returns DOM Element.
+	*
+	* @selector: String : CSS selector
+	* @context: Element : parent node to search query
+	**/
+	var el = dabut.el = function(selector, context){
+		return els(selector, context)[0];
+	};
+	
+	/**
+	* Alias of querySelectorAll().
+	* returns DOM NodeList.
+	*
+	* @selector: String : CSS selector
+	* @context: Element : parent node to search query
+	**/
+	var els = dabut.els = function(selector, context){
 		context = context || document;
-		return context.querySelectorAll(selector);
+		return filterElement(context.querySelectorAll(selector));
 	};
 	/**
-	 * Array.prototype.forEach() or Array.prototype.map(), etc.
-	 * The 3rd argument will be the this-Object in each callbacks.
-	 * Also more 3 arguments can be passed to the callback.
-	 *
-	 * @usage
-	 * each(items, callback [, arg1, arg2 ...])
-	 * 
-	 * @returns
-	 * list of object from callback.
-	 *
-	 * @items: Array or Object : 
-	 * @callback: Function : 
-	 * 
-	 * @usage
-	 * each(callbacks, null [, arg1, arg2 ...])
-	 * 
-	 * @returns
-	 * list of object from callback.
-	 *
-	 * @callback: Function : 
-	 * 
-	 * callback function
-	 * function( item, index, array[, argument ...] )
-	 * @item: Any : item of items
-	 * @index: Number : index of items
-	 * @array: Array or Object : items
-	 * @this object: Object: the 3rd argument of each()
-	 * more than 3 arguments: more than 3 arguments of each()
-	 **/
-	var each = function(items, callback, context){
+	* Array.prototype.forEach() or Array.prototype.map(), etc.
+	* The 3rd argument will be the this-Object in each callbacks.
+	* Also more 3 arguments can be passed to the callback.
+	*
+	* @usage
+	* each(items, callback [, arg1, arg2 ...])
+	*
+	* @returns
+	* list of object from callback.
+	*
+	* @items: Array or Object :
+	* @callback: Function :
+	*
+	* @usage
+	* each(callbacks, null [, arg1, arg2 ...])
+	*
+	* @returns
+	* list of object from callback.
+	*
+	* @callback: Function :
+	*
+	* callback function
+	* function( item, index, array[, argument ...] )
+	* @item: Any : item of items
+	* @index: Number : index of items
+	* @array: Array or Object : items
+	* @this object: Object: the 3rd argument of each()
+	* more than 3 arguments: more than 3 arguments of each()
+	**/
+	var each = dabut.each = function(items, callback, context){
 		var i;
 		var result = [], retVal;
 		var args = [null, 0, items].concat(Array.prototype.slice.call(arguments, 2));
 		
-		var fn = function(item, i){
-			args[1] = i;
-			if( typeof item === 'function' ){
-				args[0] = ( context.length !== undefined )? context[i]: context;
-				retVal = item.apply(args[0], args);
+		var fn = function(value, prop){
+			args[1] = prop;
+			if( isFunction(value) ){
+					args[0] = ( context.length !== undefined )? context[i]: context;
+					retVal = value.apply(args[0], args);
 			}else{
-				args[0] = item;
-				retVal = callback.apply(context, args);
+					args[0] = value;
+					retVal = callback.apply(context, args);
 			}
 			if( retVal === true ){
-				result.push(item);
+					result.push(value);
 			}else if( retVal !== false && retVal !== undefined ){
-				result.push(retVal);
+					result.push(retVal);
 			}
 		};
 		
 		if( items.length !== undefined ){
 			for( i = 0; i < items.length; i++ ){
-				fn(items[i], i);
+					fn(items[i], i);
 			}
 		}else{
-			for( i in items ){
-				if( items.hasOwnProperties(i) ){
-					fn(items[i], i);
-				}
+			for( var p in items ){
+					if( items.hasOwnProperty(p) ){
+						fn(items[p], p);
+					}
 			}
 		}
 		return result;
@@ -148,9 +172,9 @@
 	var venderPrefix = (function () {
 		var styles = window.getComputedStyle(document.documentElement, ''),
 			pre = (Array.prototype.slice
-				.call(styles)
-				.join('')
-				.match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
+					.call(styles)
+					.join('')
+					.match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
 			)[1],
 			dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
 		return {
@@ -170,72 +194,95 @@
 	};
 	
 	/**
-	 * position
-	 *
-	 * @usage
-	 * position(element);
-	 * 
-	 * @returns
-	 * {
-	 *   left: Number,
-	 *   top: Number,
-	 *   width: Number,
-	 *   height: Number
-	 * }
-	 * 
-	 * @element: HTML-Element or String : 
-	 * 
-	 * This method uses Element.getBoundingClientRect(), 
-	 * compatible width jQuery.position(), jQuery.width(), jQuery.height()
-	 **/
-	var position = function(element){
-		if( typeof element === 'string' ){
+	* position
+	*
+	* @usage
+	* position(element, abs);
+	*
+	* @returns
+	* {
+	*   left: Number,
+	*   top: Number,
+	*   width: Number,
+	*   height: Number
+	* }
+	*
+	* @element: HTML-Element or String :
+	* @abs: Boolean or String : returns absolute position if abs was set true or 'abs'.
+	*
+	* This method uses Element.getBoundingClientRect(),
+	* compatible width jQuery.position() or jQuery.offset(), jQuery.width() and jQuery.height()
+	**/
+	dabut.position = function(element, abs){
+		if( isString(element) ){
 			element = el(element);
+		}else if( element === root ){
+			element = root.document.body;
 		}
+		abs = (abs!==undefined || !!abs)? 'abs': abs;
+		
 		var metrics = element.getBoundingClientRect();
 		var documentElement = document.documentElement;
 		var math = Math;
+		var scrollX = (abs==='abs')? window.scrollX || ((document.body.scrollLeft || documentElement.scrollLeft) - documentElement.clientLeft): 0,
+			scrollY = (abs==='abs')? window.scrollY || ((document.body.scrollTop || documentElement.scrollTop) - documentElement.clientLeft): 0;
+		
 		return {
-			left: math.round(metrics.left + window.scrollX || ((document.body.scrollLeft || documentElement.scrollLeft) - documentElement.clientLeft)),
-			top: math.round(metrics.top + window.scrollY || ((document.body.scrollTop || documentElement.scrollTop) - documentElement.clientLeft)),
+			left: math.round(metrics.left + scrollX),
+			top: math.round(metrics.top + scrollY),
 			width: math.round(metrics.width),
 			height: math.round(metrics.height)
 		};
 	};
 	
 	/**
-	 * style
-	 *
-	 * @usage
-	 * style(element, prop [, value]);
-	 * 
-	 * @returns
-	 * element's style value
-	 * 
-	 * @element: HTML-Element : 
-	 * @prop: String : style property
-	 * @value: String : style value
-	 * 
-	 **/
-	var style = function(element, prop, value){
+	* style
+	*
+	* @usage
+	* style(element, prop [, value]);
+	*
+	* @returns
+	* element's style value
+	*
+	* @element: HTML-Element :
+	* @prop: String : style property
+	* @value: String : style value
+	*
+	**/
+	var style = dabut.style = function(element, prop, value){
 		var vprop;
+		var result = {};
 		var re = /(\-([a-z]))/g;
 		
+		if( isArray(prop) ){
+			each(prop, function(item){
+					result[item] = style(element, item);
+			});
+			return result;
+			
+		}else if( !isString(prop) ){
+			each(prop, function(value, key){
+					style(element, key, value);
+			});
+			return null;
+			
+		}
+		
 		if( prop === 'float' ){
-			prop = (venderPrefix==='-ms-')? 'styleFloat': 'cssFloat';
+			prop = (venderPrefix.css==='-ms-')? 'styleFloat': 'cssFloat';
 		}
 		
 		if( re.test(prop) ){
 			prop = prop.replace(re, function(){
-				return arguments[2].toUpperCase();
-			});
-			vprop = (venderPrefix+prop).replace(re, function(){
-				return arguments[2].toUpperCase();
+					return arguments[2].toUpperCase();
 			});
 		}
+		vprop = venderPrefix.js+prop;
 		
 		if( value !== undefined ){
-			element.style.prop = element.style[vprop] = value;
+			element.style[vprop] = value;
+			element.style[prop] = value;
+			
 			return value;
 		}else{
 			return getComputedStyle(element, prop) || getComputedStyle(element, vprop);
@@ -244,23 +291,23 @@
 	};
 	
 	/**
-	 * requestAnimationFrame
-	 *
-	 * @usage
-	 * ticker.append(fn, context);
-	 * 
-	 * @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
-	 * @context: Any : thisObject in fn
-	 * 
-	 * @usage
-	 * ticker.remove(fn);
-	 * 
-	 * @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
-	 **/
+	* requestAnimationFrame
+	*
+	* @usage
+	* ticker.append(fn, context);
+	*
+	* @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
+	* @context: Any : thisObject in fn
+	*
+	* @usage
+	* ticker.remove(fn);
+	*
+	* @fn: Function, Number : function to remove from callbacks for ticker, or return-value of ticker.append()
+	**/
 	var now = Date.now? Date.now: function(){ return +(new Date()); };
 	var requestAnimationFrame = root.requestAnimationFrame || root.mozRequestAnimationFrame || root.webkitRequestAnimationFrame || root.msRequestAnimationFrame || (function(){var startTime = now(); return function(callback){var f=function(){callback.call(context, now() - startTime);}; setTimeout(f, 1000/60); }; }());
 	
-	var ticker = function(timestamp){
+	var ticker = dabut.ticker = function(timestamp){
 		var self=ticker,i;
 		for( i = 0; i < self.callbacks.length; i++ ){
 			self.callbacks[i].call(self.contexts[i], timestamp);
@@ -269,42 +316,88 @@
 	};
 	ticker.callbacks = [];
 	ticker.contexts = [];
+	ticker.manager = {};
 	ticker.append = function(fn, context){
 		this.callbacks.push( fn );
 		this.contexts.push( context||null );
-		return this.callbacks.length;
+		
+		var fnID = this.callbacks.length,
+			soeji = this.callbacks.length - 1;
+		
+		this.manager[fnID] = soeji;
+		
+		return fnID;
 	};
-	ticker.remove = function(fn){
-		if( typeof fn === 'number' ){
-			this.callbacks.splice(fn, 1);
-			this.contexts.splice(fn, 1);
-		}else if( typeof fn === 'function' ){
+	
+	ticker.remove = function(fnID){
+		if( isNumber(fnID) ){
+			var soeji = this.manager[fnID];
+			
+			if( soeji === undefined ){
+					return;
+			}
+			
+			this.callbacks.splice(soeji, 1);
+			this.contexts.splice(soeji, 1);
+			
+			delete this.manager[fnID];
+			
+			for( var id in this.manager ){
+					if( this.manager[id] > soeji ){
+						this.manager[id]--;
+					}
+			}
+			
+		}else if( isFunction(fnID) ){
 			for(var i = 0; i < this.callbacks.length; i++ ){
-				if( this.callbacks[i] === fn ){
-					this.callbacks.splice(i, 1);
-					this.contexts.splice(i, 1);
-					break;
-				}
+					if( this.callbacks[i] === fnID ){
+						this.remove(i);
+						break;
+					}
 			}
 		}
 		return this;
 	};
 	
 	/**
-	 * set handler on onload event
-	 **/
-	if( root.addEventListener ){
-		root.document.addEventListener('DOMContentLoaded', loaded);
-		root.addEventListener('load', loaded, false);
+	* set event handler
+	**/
+	var on = dabut.on = function(element, type, handler){
+		if( element.addEventListener ){
+			element.addEventListener(type, handler, false);
+		}else if( element.attachEvent ){
+			element.attachEvent('on'+type, handler);
+		}else{
+			var fn = element['on'+type];
+			element['on'+type]=function(event){
+					fn(event);
+					hander(event);
+			};
+		}
+	};
+	var off = dabut.off = function(element, type, handler){
+		if( element.removeEventListener ){
+			element.removeEventListener(type, handler, false);
+		}else if( element.dettachEvent ){
+			element.dettachEvent('on'+type, handler);
+		}else{
+			element['on'+type]=null;
+		}
+	};
+	
+	
+	/**
+	* set handler on onload event
+	**/
+	on(root, 'load', loaded);
+	if( root.document ){
+		on(root.document, 'DOMContentLoaded', loaded);
 		
-	}else if( root.attachEvent ){
-		root.document.attachEvent('onDOMContentLoaded', loaded);
-		root.attachEvent('onload', loaded);
-		
-	}else{
 		var preloaded = function(){
 			if( /complete|loaded/.test( root.document.readyState ) ){
-				loaded();
+				if( loaded ){
+					loaded();
+				}
 			}else{
 				setTimeout(preloaded, 16);
 			}
@@ -314,12 +407,12 @@
 	
 	
 	/**
-	 * dab.exports
-	 **/
+	* dab.exports
+	**/
 	var dab = root.dab || {};
 	root.dab = dab;
 	dab.klass = dab.klass || {};
-	dab.klass.dabut = 'initialize el els each ticker position style';
+	dab.klass.dabut = 'initialize el els each ticker position style on off isString isNumber isFunction isArray isObject';
 	
 	if( !dab.exports ){
 		dab.exports = function(args){
@@ -343,15 +436,6 @@
 		};
 	}
 	
-	var dabut = {};
-	dabut.initialize = initialize;
-	dabut.el = el;
-	dabut.els = els;
-	dabut.each = each;
-	dabut.ticker = ticker;
-	dabut.position = position;
-	dabut.style = style;
-	
 	if(typeof define === 'function' && define.amd ){
 		if( root.document ){
 			loaded();
@@ -365,4 +449,3 @@
 	return dabut;
 	
 })(this);
-
